@@ -23,6 +23,7 @@ namespace SeleniumDriver
         public static readonly int TIME_WAIT_AFTER_REFRESH = 1000;
         public static readonly int TIME_WAIT_TO_SEND_KEYS = 300;
         public static readonly int TIME_WAIT_BEFORE_RETURN_KEY = 600;
+        public static readonly int TIME_WAIT_TO_NAVIGATE = 3000;
 
         public delegate void NotificationDelegate(string text);
 
@@ -66,6 +67,8 @@ namespace SeleniumDriver
 
             List<string> directoryNames = new List<string>()
             {
+                //"chromedriver86/", -- Doesn't work correctly
+                "chromedriver85/",
                 "chromedriver84/",
                 "chromedriver83/",
                 "chromedriver81/"
@@ -78,6 +81,7 @@ namespace SeleniumDriver
                     serv = ChromeDriverService.CreateDefaultService(dir);
                     serv.HideCommandPromptWindow = hidePrompt;
                     driver = new ChromeDriver(serv, opts);
+                    return;
                 }
                 catch (Exception ex)
                 {
@@ -86,8 +90,8 @@ namespace SeleniumDriver
                 }
             }
 
-            notificationHandler("Обновите ChromeDriver до версии 81, 83 или 84");
-            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до версии 81, 83 или 84");
+            notificationHandler("Обновите ChromeDriver до версии 81, 83, 84, 85");
+            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до версии 81, 83, 84, 85");
         }
 
         /// <summary>
@@ -247,5 +251,24 @@ namespace SeleniumDriver
         }
 
         public string GetPageSource() => driver.PageSource;
+
+        public Boolean IsURLChangedAfterNavigate()
+        {
+            int waitor = 0;
+            int circleAmount = TIME_WAIT_TO_NAVIGATE / 10;
+
+            while(true)
+            {
+                if (waitor >= TIME_WAIT_TO_NAVIGATE) return false;
+                if (NavigatedUrl == driver.Url)
+                {
+                    waitor += circleAmount;
+                    Thread.Sleep(circleAmount);
+                    continue;
+                }
+
+                return true;
+            }
+        }
     }
 }
