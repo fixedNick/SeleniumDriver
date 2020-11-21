@@ -130,14 +130,14 @@ namespace SeleniumDriver
         /// <param name="targetElement">Parent IWebElement</param>
         /// <param name="isNullAcceptable">Could be result of search equals null</param>
         /// <returns>Returns search result by selector in parent(targetElement) or on web page</returns>
-        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false)
+        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true)
         {
             int counter = 0;
             while (true)
             {
                 counter++;
                 // Is refresh time comes
-                if (counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4)== 0)
+                if (refreshPage == false && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
                 {
                     driver.Navigate().Refresh();
                     Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
@@ -163,6 +163,8 @@ namespace SeleniumDriver
                 catch { Thread.Sleep(TIME_WAIT_TO_SEARCH_CSS); }
             }
         }
+
+        ///TODO: Добавить все фичи одиночного поиска
         public List<IWebElement> FindCssList(string selector, IWebElement targetElement = null, bool isNullAcceptable = false)
         {
             int counter = 0;
