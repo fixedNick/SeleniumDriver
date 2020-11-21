@@ -137,7 +137,7 @@ namespace SeleniumDriver
             {
                 counter++;
                 // Is refresh time comes
-                if (refreshPage == false && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
+                if (refreshPage && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
                 {
                     driver.Navigate().Refresh();
                     Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
