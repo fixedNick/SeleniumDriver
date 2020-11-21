@@ -18,12 +18,14 @@ namespace SeleniumDriver
         public string NavigatedUrl { get; private set; }
 
         public static readonly int MAX_WAIT_COUNT = 60;
+        public static readonly int MAX_WAIT_COUNT_TO_SEND_KEYS = 6;
         public static readonly int REFRESH_PAGE_COUNT = 30;
         public static readonly int TIME_WAIT_TO_SEARCH_CSS = 200;
         public static readonly int TIME_WAIT_AFTER_REFRESH = 1000;
         public static readonly int TIME_WAIT_TO_SEND_KEYS = 300;
         public static readonly int TIME_WAIT_BEFORE_RETURN_KEY = 600;
         public static readonly int TIME_WAIT_TO_NAVIGATE = 3000;
+        public static readonly int TIME_WAIT_AFTER_ACTION = 1000;
 
         public delegate void NotificationDelegate(string text);
 
@@ -228,6 +230,30 @@ namespace SeleniumDriver
                     Thread.Sleep(TIME_WAIT_TO_SEND_KEYS);
                 }
             }
+        }
+
+        public bool Click(IWebElement elementToClick, bool allowException = true)
+        {
+            int counter = 0;
+            Exception thrownException = null;
+            while (counter < MAX_WAIT_COUNT_TO_SEND_KEYS)
+            {
+                try
+                {
+                    elementToClick.Click();
+                    Thread.Sleep(TIME_WAIT_AFTER_ACTION);
+                    return true;
+                }
+                catch(Exception ex)
+                {
+                    thrownException = ex;
+                    Thread.Sleep(TIME_WAIT_TO_SEND_KEYS);
+                    counter++;
+                }
+            }
+            if (allowException && thrownException != null) 
+                throw thrownException;
+            return false;
         }
 
         /// <summary>
