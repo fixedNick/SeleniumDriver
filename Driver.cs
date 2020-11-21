@@ -101,7 +101,7 @@ namespace SeleniumDriver
         /// </summary>
         /// <param name="url">Url</param>
         /// <param name="title">Full or cutted title in any case</param>
-        public void GoToUrl(String url, String title = "")
+        public void GoToUrl(String url, String title = "", string advertiseCloseButton = "")
         {
             Thread.Sleep(700);
             driver.Navigate().GoToUrl(url);
@@ -118,6 +118,14 @@ namespace SeleniumDriver
 
                 Thread.Sleep(TIME_WAIT_TO_SEARCH_CSS);
             }
+
+            Thread.Sleep(800);
+            try
+            {
+                if (advertiseCloseButton.Length >= 1 && driver.FindElement(By.CssSelector(advertiseCloseButton)) != null)
+                    Click(driver.FindElement(By.CssSelector(advertiseCloseButton)));
+            }
+            catch { }
         }
 
         public string GetCurrentUrl() => driver.Url;
@@ -130,11 +138,17 @@ namespace SeleniumDriver
         /// <param name="targetElement">Parent IWebElement</param>
         /// <param name="isNullAcceptable">Could be result of search equals null</param>
         /// <returns>Returns search result by selector in parent(targetElement) or on web page</returns>
-        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true)
+        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true, string advertiseCloseButton = "")
         {
             int counter = 0;
             while (true)
             {
+                try
+                {
+                    if (advertiseCloseButton.Length >= 1 && driver.FindElement(By.CssSelector(advertiseCloseButton)) != null)
+                        Click(driver.FindElement(By.CssSelector(advertiseCloseButton)));
+                } catch { }
+
                 counter++;
                 // Is refresh time comes
                 if (refreshPage && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
