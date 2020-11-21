@@ -124,6 +124,7 @@ namespace SeleniumDriver
 
         /// <summary>
         /// Safe clone witch accept null result of IWebElement and could search elements in parents
+        /// If time left and element didnt found - returns NULL
         /// </summary>
         /// <param name="selector">CSS Selector of searchable element</param>
         /// <param name="targetElement">Parent IWebElement</param>
