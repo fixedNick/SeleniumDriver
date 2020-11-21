@@ -17,9 +17,9 @@ namespace SeleniumDriver
         /// </summary>
         public string NavigatedUrl { get; private set; }
 
-        public static readonly int MAX_WAIT_COUNT = 60;
+        public static readonly int MAX_WAIT_COUNT = 25;
         public static readonly int MAX_WAIT_COUNT_TO_SEND_KEYS = 6;
-        public static readonly int REFRESH_PAGE_COUNT = 30;
+        public static readonly int REFRESH_PAGE_COUNT = 12;
         public static readonly int TIME_WAIT_TO_SEARCH_CSS = 200;
         public static readonly int TIME_WAIT_AFTER_REFRESH = 1000;
         public static readonly int TIME_WAIT_TO_SEND_KEYS = 300;
@@ -124,27 +124,27 @@ namespace SeleniumDriver
 
         /// <summary>
         /// Safe clone witch accept null result of IWebElement and could search elements in parents
-        /// If time left and element didnt found - returns NULL
+        /// Only when isNullAcceptable: If time left and element didnt found - returns NULL
         /// </summary>
         /// <param name="selector">CSS Selector of searchable element</param>
         /// <param name="targetElement">Parent IWebElement</param>
         /// <param name="isNullAcceptable">Could be result of search equals null</param>
         /// <returns>Returns search result by selector in parent(targetElement) or on web page</returns>
-        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false)
+        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false)
         {
             int counter = 0;
             while (true)
             {
                 counter++;
                 // Is refresh time comes
-                if (counter % REFRESH_PAGE_COUNT == 0)
+                if (counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4)== 0)
                 {
                     driver.Navigate().Refresh();
                     Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
                 }
 
                 // If result of method could be Null
-                if (isNullAcceptable && counter == MAX_WAIT_COUNT) return null;
+                if (isNullAcceptable && counter == (useFastSearch == false ? MAX_WAIT_COUNT : 8)) return null;
 
                 // Trying to get webelement
                 try
@@ -152,9 +152,13 @@ namespace SeleniumDriver
                     IWebElement result = null;
                     if (targetElement == null)
                         result = driver.FindElement(By.CssSelector(selector));
+                    else
+                        result = targetElement.FindElement(By.CssSelector(selector));
 
-                    if (result != null) return result;
-                    else Thread.Sleep(TIME_WAIT_TO_SEARCH_CSS);
+                    if (result != null) 
+                        return result;
+                    
+                    Thread.Sleep(TIME_WAIT_TO_SEARCH_CSS);
                 }
                 catch { Thread.Sleep(TIME_WAIT_TO_SEARCH_CSS); }
             }
