@@ -210,9 +210,15 @@ namespace SeleniumDriver
         /// <param name="text">Keys you want to send</param>
         /// <param name="sendReturnKey">If you want to send return key after text then set this parameter as TRUE</param>
         /// <param name="allowException">If you want this method to throwing exceptions then set this parater as TRUE</param>
-        public void KeySend(IWebElement targetElement, String text, bool sendReturnKey = false, bool allowException = false)
+        /// <returns> 
+        /// TRUE - OK
+        /// FALSE - Thrown an Exception, keys didnt send
+        /// </returns>
+        public bool KeySend(IWebElement targetElement, String text, bool sendReturnKey = false, bool allowException = false)
         {
-            while (true)
+            int counter = 0;
+            Exception thrownException = null;
+            while (counter < MAX_WAIT_COUNT_TO_SEND_KEYS)
             {
                 try
                 {
@@ -222,16 +228,30 @@ namespace SeleniumDriver
                         Thread.Sleep(TIME_WAIT_BEFORE_RETURN_KEY);
                         targetElement.SendKeys(OpenQA.Selenium.Keys.Return);
                     }
-                    break;
+                    return true;
                 }
                 catch(Exception ex)
                 {
-                    if (allowException) throw ex;
+                    thrownException = ex;
                     Thread.Sleep(TIME_WAIT_TO_SEND_KEYS);
+                    counter++;
                 }
             }
+
+            if (allowException && thrownException != null)
+                throw thrownException;
+            return false;
         }
 
+        /// <summary>
+        /// The same method as KeysSend, but sending a click to any element you choose
+        /// </summary>
+        /// <param name="elementToClick">Your IWebElement to send keys to</param>
+        /// <param name="allowException">If you want this method to throwing exceptions then set this parater as TRUE</param>
+        /// <returns> 
+        /// TRUE - OK
+        /// FALSE - Thrown an Exception, keys didnt send
+        /// </returns>
         public bool Click(IWebElement elementToClick, bool allowException = true)
         {
             int counter = 0;
@@ -251,6 +271,7 @@ namespace SeleniumDriver
                     counter++;
                 }
             }
+
             if (allowException && thrownException != null) 
                 throw thrownException;
             return false;
