@@ -27,6 +27,8 @@ namespace SeleniumDriver
         public static readonly int TIME_WAIT_TO_NAVIGATE = 3000;
         public static readonly int TIME_WAIT_AFTER_ACTION = 1000;
 
+        public static string AdvertiseElementCSS = "";
+
         public delegate void NotificationDelegate(string text);
 
         public enum DriverType
@@ -122,6 +124,8 @@ namespace SeleniumDriver
             Thread.Sleep(800);
             try
             {
+                if (advertiseCloseButton.Length <= 0) advertiseCloseButton = AdvertiseElementCSS;
+
                 if (advertiseCloseButton.Length >= 1 && driver.FindElement(By.CssSelector(advertiseCloseButton)) != null)
                     Click(driver.FindElement(By.CssSelector(advertiseCloseButton)));
             }
@@ -143,22 +147,25 @@ namespace SeleniumDriver
             int counter = 0;
             while (true)
             {
+                // Check is advertise element showed
                 try
                 {
+                    if (advertiseCloseButton.Length <= 0) advertiseCloseButton = AdvertiseElementCSS;
+
                     if (advertiseCloseButton.Length >= 1 && driver.FindElement(By.CssSelector(advertiseCloseButton)) != null)
                         Click(driver.FindElement(By.CssSelector(advertiseCloseButton)));
                 } catch { }
 
                 counter++;
                 // Is refresh time comes
-                if (refreshPage && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
+                if (refreshPage == true && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
                 {
                     driver.Navigate().Refresh();
                     Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
                 }
 
                 // If result of method could be Null
-                if (isNullAcceptable && counter == (useFastSearch == false ? MAX_WAIT_COUNT : 8)) return null;
+                if (isNullAcceptable == true && counter == (useFastSearch == false ? MAX_WAIT_COUNT : 8)) return null;
 
                 // Trying to get webelement
                 try
@@ -337,6 +344,12 @@ namespace SeleniumDriver
 
                 return true;
             }
+        }
+
+        public void ExecuteScript(string script)
+        {
+            IJavaScriptExecutor IJS = driver as IJavaScriptExecutor;
+            IJS.ExecuteScript(script);
         }
     }
 }
