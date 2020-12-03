@@ -140,7 +140,8 @@ namespace SeleniumDriver
             while (true)
             {
                 // Close advertises
-                if(advertiseData != null)
+                // isAdvertiseSearch == false only when it simple search, TRUE when we searching for advertise
+                if(isAdvertiseSearch == false && advertiseData != null)
                 {
                     Advertise advertise = new Advertise(advertiseData, this);
                     if (advertise.IsAdvertiseShowed()) 
