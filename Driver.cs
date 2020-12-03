@@ -36,7 +36,7 @@ namespace SeleniumDriver
             Chrome
         }
 
-        public Driver(DriverType type, 
+        public Driver(DriverType type,
             NotificationDelegate notificationHandler,
             bool startMaximized = false,
             bool headless = true,
@@ -114,17 +114,22 @@ namespace SeleniumDriver
             {
                 counter++;
                 if (counter % REFRESH_PAGE_COUNT == 0)
-                {
-                    driver.Navigate().Refresh(); Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
-                }
+                    RefreshPage();
 
                 Thread.Sleep(TIME_WAIT_TO_SEARCH_CSS);
             }
 
-            Thread.Sleep(800);
+            Thread.Sleep(1500);
+
+            SearchAdvertises();
         }
 
         public string GetCurrentUrl() => driver.Url;
+        public void RefreshPage() {
+            driver.Navigate().Refresh();
+            Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
+            SearchAdvertises();
+        }
 
         /// <summary>
         /// Safe clone witch accept null result of IWebElement and could search elements in parents
@@ -134,26 +139,21 @@ namespace SeleniumDriver
         /// <param name="targetElement">Parent IWebElement</param>
         /// <param name="isNullAcceptable">Could be result of search equals null</param>
         /// <returns>Returns search result by selector in parent(targetElement) or on web page</returns>
-        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true, bool isAdvertiseSearch = false)
+        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true, bool isAdvertiseSearch = false, bool useAdvertiseSearch = false)
         {
             int counter = 0;
             while (true)
             {
                 // Close advertises
                 // isAdvertiseSearch == false only when it simple search, TRUE when we searching for advertise
-                if(isAdvertiseSearch == false && advertiseData != null)
-                {
-                    Advertise advertise = new Advertise(advertiseData, this);
-                    if (advertise.IsAdvertiseShowed()) 
-                        advertise.CloseAdvertise();
-                }
+                if(useAdvertiseSearch == true && isAdvertiseSearch == false && advertiseData != null)
+                    SearchAdvertises();
 
                 counter++;
                 // Is refresh time comes
                 if (refreshPage == true && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
                 {
-                    driver.Navigate().Refresh();
-                    Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
+                    RefreshPage();
                 }
 
                 // If result of method could be Null
@@ -186,10 +186,7 @@ namespace SeleniumDriver
                 counter++;
                 // Is refresh time comes
                 if (counter % REFRESH_PAGE_COUNT == 0)
-                {
-                    driver.Navigate().Refresh();
-                    Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
-                }
+                    RefreshPage();
 
                 // If result of method could be Null
                 if (isNullAcceptable && counter == MAX_WAIT_COUNT) return null;
@@ -219,8 +216,8 @@ namespace SeleniumDriver
             foreach (var c in cookies)
                 driver.Manage().Cookies.AddCookie(c);
 
-            Thread.Sleep(1000);
-            driver.Navigate().Refresh(); Thread.Sleep(1000);
+            Thread.Sleep(1000); RefreshPage();
+
         }
 
         /// <summary>
@@ -342,6 +339,13 @@ namespace SeleniumDriver
         {
             IJavaScriptExecutor IJS = driver as IJavaScriptExecutor;
             IJS.ExecuteScript(script);
+        }
+
+        private void SearchAdvertises()
+        {
+            Advertise advertise = new Advertise(advertiseData, this);
+            if (advertise.IsAdvertiseShowed())
+                advertise.CloseAdvertise();
         }
     }
 
