@@ -27,7 +27,7 @@ namespace SeleniumDriver
         private static readonly int TIME_WAIT_TO_NAVIGATE = 3000;
         private static readonly int TIME_WAIT_AFTER_ACTION = 1000;
 
-        public static AdvertiseData advertiseData;
+        public AdvertiseData advertiseData;
 
         public delegate void NotificationDelegate(string text);
 
@@ -380,7 +380,7 @@ namespace SeleniumDriver
             string headerText = headerResult.Text.Trim().ToLower();
             foreach (var h in aData.HeaderText)
             {
-                if (headerText.Equals(h.Trim().ToLower()))
+                if (headerText.Contains(h.Trim().ToLower()))
                     return true;
             }
 
