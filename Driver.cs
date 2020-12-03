@@ -17,17 +17,17 @@ namespace SeleniumDriver
         /// </summary>
         public string NavigatedUrl { get; private set; }
 
-        public static readonly int MAX_WAIT_COUNT = 25;
-        public static readonly int MAX_WAIT_COUNT_TO_SEND_KEYS = 6;
-        public static readonly int REFRESH_PAGE_COUNT = 12;
-        public static readonly int TIME_WAIT_TO_SEARCH_CSS = 200;
-        public static readonly int TIME_WAIT_AFTER_REFRESH = 1000;
-        public static readonly int TIME_WAIT_TO_SEND_KEYS = 300;
-        public static readonly int TIME_WAIT_BEFORE_RETURN_KEY = 600;
-        public static readonly int TIME_WAIT_TO_NAVIGATE = 3000;
-        public static readonly int TIME_WAIT_AFTER_ACTION = 1000;
+        private static readonly int MAX_WAIT_COUNT = 25;
+        private static readonly int MAX_WAIT_COUNT_TO_SEND_KEYS = 6;
+        private static readonly int REFRESH_PAGE_COUNT = 12;
+        private static readonly int TIME_WAIT_TO_SEARCH_CSS = 200;
+        private static readonly int TIME_WAIT_AFTER_REFRESH = 1000;
+        private static readonly int TIME_WAIT_TO_SEND_KEYS = 300;
+        private static readonly int TIME_WAIT_BEFORE_RETURN_KEY = 600;
+        private static readonly int TIME_WAIT_TO_NAVIGATE = 3000;
+        private static readonly int TIME_WAIT_AFTER_ACTION = 1000;
 
-        public static string AdvertiseElementCSS = "";
+        public static AdvertiseData advertiseData;
 
         public delegate void NotificationDelegate(string text);
 
@@ -103,7 +103,7 @@ namespace SeleniumDriver
         /// </summary>
         /// <param name="url">Url</param>
         /// <param name="title">Full or cutted title in any case</param>
-        public void GoToUrl(String url, String title = "", string advertiseCloseButton = "")
+        public void GoToUrl(String url, String title = "")
         {
             Thread.Sleep(700);
             driver.Navigate().GoToUrl(url);
@@ -122,14 +122,6 @@ namespace SeleniumDriver
             }
 
             Thread.Sleep(800);
-            try
-            {
-                if (advertiseCloseButton.Length <= 0) advertiseCloseButton = AdvertiseElementCSS;
-
-                if (advertiseCloseButton.Length >= 1 && driver.FindElement(By.CssSelector(advertiseCloseButton)) != null)
-                    Click(driver.FindElement(By.CssSelector(advertiseCloseButton)));
-            }
-            catch { }
         }
 
         public string GetCurrentUrl() => driver.Url;
@@ -142,19 +134,18 @@ namespace SeleniumDriver
         /// <param name="targetElement">Parent IWebElement</param>
         /// <param name="isNullAcceptable">Could be result of search equals null</param>
         /// <returns>Returns search result by selector in parent(targetElement) or on web page</returns>
-        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true, string advertiseCloseButton = "")
+        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true, bool isAdvertiseSearch = false)
         {
             int counter = 0;
             while (true)
             {
-                // Check is advertise element showed
-                try
+                // Close advertises
+                if(advertiseData != null)
                 {
-                    if (advertiseCloseButton.Length <= 0) advertiseCloseButton = AdvertiseElementCSS;
-
-                    if (advertiseCloseButton.Length >= 1 && driver.FindElement(By.CssSelector(advertiseCloseButton)) != null)
-                        Click(driver.FindElement(By.CssSelector(advertiseCloseButton)));
-                } catch { }
+                    Advertise advertise = new Advertise(advertiseData, this);
+                    if (advertise.IsAdvertiseShowed()) 
+                        advertise.CloseAdvertise();
+                }
 
                 counter++;
                 // Is refresh time comes
@@ -350,6 +341,56 @@ namespace SeleniumDriver
         {
             IJavaScriptExecutor IJS = driver as IJavaScriptExecutor;
             IJS.ExecuteScript(script);
+        }
+    }
+
+    public class AdvertiseData
+    {
+        public readonly string MainBoxCss;
+        public readonly string HeaderCss;
+        public readonly string CloseButtonCss;
+        public readonly List<string> HeaderText;
+        public readonly bool CompareHeaderText;
+
+        public AdvertiseData(string mainBox, string header, string closeBtn, List<string> headers,  bool compareHeader)
+        {
+            MainBoxCss = mainBox;
+            HeaderCss = header;
+            CloseButtonCss = closeBtn;
+            HeaderText = headers;
+            CompareHeaderText = compareHeader;
+        }
+    }
+
+    class Advertise
+    {
+        private AdvertiseData aData;
+        private Driver driver;
+        public Advertise(AdvertiseData advData, Driver dr) { aData = advData; driver = dr; }
+        public Boolean IsAdvertiseShowed()
+        {
+            var mainBoxResult = driver.FindCss(aData.MainBoxCss, isNullAcceptable: true, useFastSearch: true, refreshPage: false, isAdvertiseSearch: true);
+            if (mainBoxResult == null) return false;
+
+            var headerResult = driver.FindCss(aData.HeaderCss, isNullAcceptable: true, useFastSearch: true, refreshPage: false, isAdvertiseSearch: true);
+            if (headerResult == null) return false;
+            if (aData.CompareHeaderText == false) return true;
+
+            string headerText = headerResult.Text.Trim().ToLower();
+            foreach (var h in aData.HeaderText)
+            {
+                if (headerText.Equals(h.Trim().ToLower()))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public void CloseAdvertise()
+        {
+            var closeElement = driver.FindCss(aData.CloseButtonCss, isNullAcceptable: true, useFastSearch: true, isAdvertiseSearch: true);
+            if (closeElement == null) throw new Exception("Найдена реклама, но не удается ее закрыть. Не удается обнаружить элемент для закрытия.");
+            driver.Click(closeElement, allowException: true);
         }
     }
 }
