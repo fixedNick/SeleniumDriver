@@ -11,6 +11,8 @@ namespace SeleniumDriver
     {
         // Driver Component
         private IWebDriver driver;
+        private Int32 ProcessID = -1;
+        private List<Int32> DriverProcessesId = new List<Int32>();
         /// <summary>
         /// The last navigated URL by method GoToUrl saved here.
         /// You can compare current URL with this field to see if driver changed page after your manipulations
@@ -44,6 +46,10 @@ namespace SeleniumDriver
             bool showExceptions = false,
             string driverName = "chromedriver.exe")
         {
+            // Добавим все активные процессы наших драйверов, дабы различать какой процесс был запущен, а какой запускается
+            foreach (var activeProcess in System.Diagnostics.Process.GetProcessesByName(driverName))
+                DriverProcessesId.Add(activeProcess.Id);
+
             switch (type)
             {
                 case DriverType.Chrome:
@@ -71,7 +77,9 @@ namespace SeleniumDriver
 
             List<string> directoryNames = new List<string>()
             {
-                //"chromedriver86/", -- Doesn't work correctly
+                "chromedriver88/",
+                "chromedriver87/",
+                "chromedriver86/",
                 "chromedriver85/",
                 "chromedriver84/",
                 "chromedriver83/",
@@ -85,17 +93,39 @@ namespace SeleniumDriver
                     serv = ChromeDriverService.CreateDefaultService(dir);
                     serv.HideCommandPromptWindow = hidePrompt;
                     driver = new ChromeDriver(serv, opts);
+
+                    // Определяем запущенный процесс, обозначаем его в экземпляре и добавляем в список запущенных потоков.
+
+                    var activeProcesses = System.Diagnostics.Process.GetProcessesByName(driverName.Split('.')[0]);
+                    foreach(var activeProcess in activeProcesses)
+                    {
+                        if (DriverProcessesId.Contains(activeProcess.Id))
+                            continue;
+                        ProcessID = activeProcess.Id;
+                        DriverProcessesId.Add(activeProcess.Id);
+                        break;
+                    }
+
                     return;
                 }
                 catch (Exception ex)
                 {
+                    // Не удалось запустить драйвер, убиваем поток консоли
+                    var activeProcesses = System.Diagnostics.Process.GetProcessesByName(driverName.Split('.')[0]);
+                    foreach (var activeProcess in activeProcesses)
+                    {
+                        if (DriverProcessesId.Contains(activeProcess.Id))
+                            continue;
+                        activeProcess.Kill();
+                    }
+
                     if (showExceptions)
                         notificationHandler($"[{dir + driverName}]\n" + ex.Message);
                 }
             }
 
-            notificationHandler("Обновите ChromeDriver до версии 81, 83, 84, 85");
-            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до версии 81, 83, 84, 85");
+            notificationHandler("Обновите ChromeDriver до версии 81 - 88");
+            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до версии 81 - 88");
         }
 
         /// <summary>
