@@ -12,7 +12,7 @@ namespace SeleniumDriver
         // Driver Component
         private IWebDriver driver;
         private Int32 ProcessID = -1;
-        private List<Int32> DriverProcessesId = new List<Int32>();
+        private static List<Int32> DriverProcessesId = new List<Int32>();
         /// <summary>
         /// The last navigated URL by method GoToUrl saved here.
         /// You can compare current URL with this field to see if driver changed page after your manipulations
@@ -47,8 +47,12 @@ namespace SeleniumDriver
             string driverName = "chromedriver.exe")
         {
             // Добавим все активные процессы наших драйверов, дабы различать какой процесс был запущен, а какой запускается
-            foreach (var activeProcess in System.Diagnostics.Process.GetProcessesByName(driverName))
-                DriverProcessesId.Add(activeProcess.Id);
+            // При условии, что еще ни один драйвер не был запущен и его процесс не был добавлен в пул активных потоков
+            if (DriverProcessesId.Count <= 0)
+            {
+                foreach (var activeProcess in System.Diagnostics.Process.GetProcessesByName(driverName))
+                    DriverProcessesId.Add(activeProcess.Id);
+            }
 
             switch (type)
             {
@@ -335,12 +339,26 @@ namespace SeleniumDriver
         public static Boolean Alive(Driver dr) => dr.driver == null ? false : true;
         public Boolean Alive() => driver == null ? false : true;
 
+        /// <summary>
+        /// Метод для остановки работы текущего драйвера
+        /// Пытается закрыть драйвер, так же пытается убить его процесс, если тот не был убит при закрытии драйвера и удаляет id потока из пула активных
+        /// </summary>
         public void StopDriver()
         {
             if (this.Alive())
             {
-                driver.Quit();
-                driver = null;
+                try
+                {
+                    driver.Quit();
+                    driver = null;
+                } catch { }
+
+                try
+                {
+                    DriverProcessesId.Remove(this.ProcessID);
+                    System.Diagnostics.Process.GetProcessById(this.ProcessID).Kill();
+                }
+                catch { }
             }
         }
 
