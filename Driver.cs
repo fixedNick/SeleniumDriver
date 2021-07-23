@@ -79,22 +79,26 @@ namespace SeleniumDriver
             if (headless)
                 opts.AddArgument("headless");
 
+            string mainDirectory = "drivers/chromedriver/";
             List<string> directoryNames = new List<string>()
             {
+                "chromedriver92/",
+                "chromedriver91/",
+                "chromedriver90/",
+                "chromedriver89/",
                 "chromedriver88/",
                 "chromedriver87/",
                 "chromedriver86/",
                 "chromedriver85/",
                 "chromedriver84/",
-                "chromedriver83/",
-                "chromedriver81/"
+                "chromedriver83/"
             };
 
             foreach (var dir in directoryNames)
             {
                 try
                 {
-                    serv = ChromeDriverService.CreateDefaultService(dir);
+                    serv = ChromeDriverService.CreateDefaultService(mainDirectory + dir);
                     serv.HideCommandPromptWindow = hidePrompt;
                     driver = new ChromeDriver(serv, opts);
 
@@ -128,8 +132,8 @@ namespace SeleniumDriver
                 }
             }
 
-            notificationHandler("Обновите ChromeDriver до версии 81 - 88");
-            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до версии 81 - 88");
+            notificationHandler("Обновите ChromeDriver до версии 83 - 92");
+            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до версии 83 - 92");
         }
 
         /// <summary>
