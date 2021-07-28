@@ -29,7 +29,6 @@ namespace SeleniumDriver
         private static readonly int TIME_WAIT_TO_NAVIGATE = 3000;
         private static readonly int TIME_WAIT_AFTER_ACTION = 1000;
 
-        public AdvertiseData advertiseData;
 
         public delegate void NotificationDelegate(string text);
 
@@ -158,15 +157,12 @@ namespace SeleniumDriver
             }
 
             Thread.Sleep(1500);
-
-            SearchAdvertises();
         }
 
         public string GetCurrentUrl() => driver.Url;
         public void RefreshPage() {
             driver.Navigate().Refresh();
             Thread.Sleep(TIME_WAIT_AFTER_REFRESH);
-            SearchAdvertises();
         }
 
         /// <summary>
@@ -182,11 +178,6 @@ namespace SeleniumDriver
             int counter = 0;
             while (true)
             {
-                // Close advertises
-                // isAdvertiseSearch == false only when it simple search, TRUE when we searching for advertise
-                if(useAdvertiseSearch == true && isAdvertiseSearch == false && advertiseData != null)
-                    SearchAdvertises();
-
                 counter++;
                 // Is refresh time comes
                 if (refreshPage == true && counter % (useFastSearch == false ? REFRESH_PAGE_COUNT : 4) == 0)
@@ -391,63 +382,6 @@ namespace SeleniumDriver
         {
             IJavaScriptExecutor IJS = driver as IJavaScriptExecutor;
             IJS.ExecuteScript(script);
-        }
-
-        private void SearchAdvertises()
-        {
-            Advertise advertise = new Advertise(advertiseData, this);
-            if (advertise.IsAdvertiseShowed())
-                advertise.CloseAdvertise();
-        }
-    }
-
-    public class AdvertiseData
-    {
-        public readonly string MainBoxCss;
-        public readonly string HeaderCss;
-        public readonly string CloseButtonCss;
-        public readonly List<string> HeaderText;
-        public readonly bool CompareHeaderText;
-
-        public AdvertiseData(string mainBox, string header, string closeBtn, List<string> headers,  bool compareHeader)
-        {
-            MainBoxCss = mainBox;
-            HeaderCss = header;
-            CloseButtonCss = closeBtn;
-            HeaderText = headers;
-            CompareHeaderText = compareHeader;
-        }
-    }
-
-    class Advertise
-    {
-        private AdvertiseData aData;
-        private Driver driver;
-        public Advertise(AdvertiseData advData, Driver dr) { aData = advData; driver = dr; }
-        public Boolean IsAdvertiseShowed()
-        {
-            var mainBoxResult = driver.FindCss(aData.MainBoxCss, isNullAcceptable: true, useFastSearch: true, refreshPage: false, isAdvertiseSearch: true);
-            if (mainBoxResult == null) return false;
-
-            var headerResult = driver.FindCss(aData.HeaderCss, isNullAcceptable: true, useFastSearch: true, refreshPage: false, isAdvertiseSearch: true);
-            if (headerResult == null) return false;
-            if (aData.CompareHeaderText == false) return true;
-
-            string headerText = headerResult.Text.Trim().ToLower();
-            foreach (var h in aData.HeaderText)
-            {
-                if (headerText.Contains(h.Trim().ToLower()))
-                    return true;
-            }
-
-            return false;
-        }
-
-        public void CloseAdvertise()
-        {
-            var closeElement = driver.FindCss(aData.CloseButtonCss, isNullAcceptable: true, useFastSearch: true, isAdvertiseSearch: true);
-            if (closeElement == null) throw new Exception("Найдена реклама, но не удается ее закрыть. Не удается обнаружить элемент для закрытия.");
-            driver.Click(closeElement, allowException: true);
         }
     }
 }
