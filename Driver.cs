@@ -79,6 +79,7 @@ namespace SeleniumDriver
             ChromeDriverService serv;
             ChromeOptions opts = new ChromeOptions();
 
+
             if (startMaximized)
                 opts.AddArgument("start-maximized");
 
@@ -89,9 +90,11 @@ namespace SeleniumDriver
 
             foreach (var dir in driverDirectories)
             {
+                var pathToSingleDriver = $"{dir}\\{driverName}";
                 try
                 {
-                    serv = ChromeDriverService.CreateDefaultService(dir + "/" + driverName);
+                    notificationHandler($"starting driver: '{pathToSingleDriver}'");
+                    serv = ChromeDriverService.CreateDefaultService(dir, driverName);
                     serv.HideCommandPromptWindow = hidePrompt;
                     driver = new ChromeDriver(serv, opts);
 
@@ -127,7 +130,7 @@ namespace SeleniumDriver
                     }
 
                     if (showExceptions)
-                        notificationHandler($"[{dir + driverName}]\n" + ex.Message);
+                        notificationHandler($"[{pathToSingleDriver}]\n" + ex.Message);
                 }
             }
 
