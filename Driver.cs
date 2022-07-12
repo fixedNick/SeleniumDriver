@@ -13,6 +13,9 @@ namespace SeleniumDriver
         private IWebDriver driver;
         private Int32 ProcessID = -1;
         private static List<Int32> DriverProcessesId = new List<Int32>();
+        private static List<Thread> DriverAdvertMonitorProcessesID = new List<Thread>();
+        private Thread MonitorThread = null;
+
         /// <summary>
         /// The last navigated URL by method GoToUrl saved here.
         /// You can compare current URL with this field to see if driver changed page after your manipulations
@@ -31,6 +34,7 @@ namespace SeleniumDriver
 
 
         public delegate void NotificationDelegate(string text);
+        public NotificationDelegate NotificationHandler;
 
         public enum DriverType
         {
@@ -43,8 +47,10 @@ namespace SeleniumDriver
             bool headless = true,
             bool hidePrompt = true,
             bool showExceptions = false,
+            string directoryPath = "",
             string driverName = "chromedriver.exe")
         {
+            NotificationHandler = notificationHandler;
             // Добавим все активные процессы наших драйверов, дабы различать какой процесс был запущен, а какой запускается
             // При условии, что еще ни один драйвер не был запущен и его процесс не был добавлен в пул активных потоков
             if (DriverProcessesId.Count <= 0)
@@ -56,7 +62,7 @@ namespace SeleniumDriver
             switch (type)
             {
                 case DriverType.Chrome:
-                    CreateChromeDriver(notificationHandler, startMaximized, headless, hidePrompt, showExceptions, driverName);
+                    CreateChromeDriver(notificationHandler, startMaximized, headless, hidePrompt, showExceptions, directoryPath, driverName);
                     break;
             }
         }
@@ -67,6 +73,7 @@ namespace SeleniumDriver
             bool headless = true,
             bool hidePrompt = true,
             bool showExceptions = false,
+            string directoryPath = "",
             string driverName = "chromedriver.exe")
         {
             ChromeDriverService serv;
@@ -78,26 +85,13 @@ namespace SeleniumDriver
             if (headless)
                 opts.AddArgument("headless");
 
-            string mainDirectory = "drivers/chromedriver/";
-            List<string> directoryNames = new List<string>()
-            {
-                "chromedriver92/",
-                "chromedriver91/",
-                "chromedriver90/",
-                "chromedriver89/",
-                "chromedriver88/",
-                "chromedriver87/",
-                "chromedriver86/",
-                "chromedriver85/",
-                "chromedriver84/",
-                "chromedriver83/"
-            };
+            string[] driverDirectories = System.IO.Directory.GetDirectories(directoryPath);
 
-            foreach (var dir in directoryNames)
+            foreach (var dir in driverDirectories)
             {
                 try
                 {
-                    serv = ChromeDriverService.CreateDefaultService(mainDirectory + dir);
+                    serv = ChromeDriverService.CreateDefaultService(dir + "/" + driverName);
                     serv.HideCommandPromptWindow = hidePrompt;
                     driver = new ChromeDriver(serv, opts);
 
@@ -112,6 +106,12 @@ namespace SeleniumDriver
                         DriverProcessesId.Add(activeProcess.Id);
                         break;
                     }
+
+                    // Успешный запуск браузера, запускаем процесс, который будет отслеживать появление рекламы на страницах и закрывать их
+                    //Thread advertiseThread = new Thread(AdvertiseMonitor);
+                    //DriverAdvertMonitorProcessesID.Add(advertiseThread);
+                    //MonitorThread = advertiseThread;
+                    //advertiseThread.Start();
 
                     return;
                 }
@@ -131,9 +131,34 @@ namespace SeleniumDriver
                 }
             }
 
-            notificationHandler("Обновите ChromeDriver до версии 83 - 92");
-            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до версии 83 - 92");
+            notificationHandler("Обновите ChromeDriver до новой версии");
+            throw new Exception("Неудалось создать экземпляр ChromeDriver.\n" + "Обновите ChromeDriver до новой версии");
         }
+        /// <summary>
+        /// Данный метод работает в отдельном потоке и постоянно проверяет - не появилось ли уведомление, рекламаи тп
+        /// Закидываем список селекторов кнопок, которые закрывают различные уведомления, чаты и прочую ересь
+        /// Проверяем, есть ли таковые на странице 
+        /// Если есть - закрываем их и продолжаем действия по кругу в бесконечном цикле
+        /// 
+        /// Если метод не сработает - возможное решение -
+        /// при ошибке в методах FindCss и подобных ему - будет запускать поиск рекламы и закрывать ее, а далее перевызывать метод, в котором произошел сбой
+        /// </summary>
+        /// <param name="o"></param>
+        //private void AdvertiseMonitor(object o)
+        //{
+        //    var closeSelectors = System.IO.File.ReadAllLines("css_btn_close.txt");
+
+        //    while(true)
+        //    {
+        //        foreach (var selector in closeSelectors)
+        //        {
+        //            var result = FindCss(selector, isNullAcceptable: true, useFastSearch: true, refreshPage: false);
+        //            if(result != null)
+        //                Click(result, allowException: false);
+        //        }
+        //    }
+        //}
+
 
         /// <summary>
         /// This method is safe clone of method GoToUrl in OpenQA.Selenium
@@ -173,7 +198,7 @@ namespace SeleniumDriver
         /// <param name="targetElement">Parent IWebElement</param>
         /// <param name="isNullAcceptable">Could be result of search equals null</param>
         /// <returns>Returns search result by selector in parent(targetElement) or on web page</returns>
-        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true)
+        public IWebElement FindCss(string selector, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true, bool showExceptions = true)
         {
             int counter = 0;
             while (true)
@@ -193,9 +218,22 @@ namespace SeleniumDriver
                 {
                     IWebElement result = null;
                     if (targetElement == null)
-                        result = driver.FindElement(By.CssSelector(selector));
+                    {
+                        try
+                        {
+                            result = driver.FindElement(By.CssSelector(selector));
+                        }
+                        catch { } // TODO логирование
+
+                    }
                     else
-                        result = targetElement.FindElement(By.CssSelector(selector));
+                    {
+                        try
+                        {
+                            result = targetElement.FindElement(By.CssSelector(selector));
+                        }
+                        catch { } // TODO логирование
+                    }
 
                     if (result != null) 
                         return result;
@@ -354,6 +392,13 @@ namespace SeleniumDriver
                     System.Diagnostics.Process.GetProcessById(this.ProcessID).Kill();
                 }
                 catch { }
+
+                try
+                {
+                    if (MonitorThread?.IsAlive == true)
+                        MonitorThread.Abort();
+                }
+                catch { }
             }
         }
 
@@ -385,3 +430,7 @@ namespace SeleniumDriver
         }
     }
 }
+
+
+//// TODO
+/// Возможность выборочного запуска процесса мониторинга
