@@ -15,6 +15,7 @@ namespace SeleniumDriver
         private static List<Int32> DriverProcessesId = new List<Int32>();
         private static List<Thread> DriverAdvertMonitorProcessesID = new List<Thread>();
         private Thread MonitorThread = null;
+        public static Driver Empty = new Driver();
 
         /// <summary>
         /// The last navigated URL by method GoToUrl saved here.
@@ -40,6 +41,8 @@ namespace SeleniumDriver
         {
             Chrome
         }
+
+        public Driver() { }
 
         public Driver(DriverType type,
             NotificationDelegate notificationHandler,
@@ -328,6 +331,23 @@ namespace SeleniumDriver
             if (allowException && thrownException != null)
                 throw thrownException;
             return false;
+        }
+
+        /// <summary>
+        /// Click witch accepts selector of any element on page.
+        /// Firstly this method using other method FindCss to find element on page.
+        /// Then makes click on it
+        /// </summary>
+        /// <returns>
+        ///     true - clicked successfully
+        ///     false - element unreacheble
+        /// </returns>
+        public bool Click(string elementSelector, bool allowException = true, IWebElement targetElement = null, bool isNullAcceptable = false, bool useFastSearch = false, bool refreshPage = true)
+        {
+            var foundElement = FindCss(elementSelector, targetElement, isNullAcceptable, useFastSearch, refreshPage, allowException);
+            if (isNullAcceptable == true && foundElement == null)
+                return false;
+            return Click(foundElement, allowException);
         }
 
         /// <summary>
